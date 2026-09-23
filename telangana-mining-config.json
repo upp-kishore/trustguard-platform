@@ -1,0 +1,109 @@
+{
+  "_comment": "Telangana Mining Safety Network — different state, different orgs, different roles",
+
+  "network": {
+    "name": "Telangana Mining Safety Network",
+    "id":   "tg-mining-safety",
+    "channel": "tg-mining-safety-channel",
+    "domain": "tg-mining-safety.com",
+    "fabricVersion": "2.5.15",
+    "fabricCAVersion": "1.5.17"
+  },
+
+  "orderer": {
+    "orgName": "TGOrdererMSP",
+    "domain":  "tg-mining-safety.com",
+    "host":    "10.0.1.1",
+    "port":    7050,
+    "adminPort": 7053,
+    "caPort":  9054,
+    "consensus": "etcdraft",
+    "batchTimeout": "500ms",
+    "maxMessageCount": 100,
+    "absoluteMaxBytes": "99 MB",
+    "preferredMaxBytes": "512 KB",
+    "nodeCount": 3
+  },
+
+  "organizations": [
+    {
+      "id":        "TGMineOperatorMSP",
+      "name":      "TGMineOperator",
+      "type":      "mine-operator",
+      "domain":    "tg-mine-operator.com",
+      "host":      "10.0.1.2",
+      "peerPort":  7051,
+      "gossipPort": 7052,
+      "chaincodePort": 7052,
+      "caPort":    7054,
+      "caAdminUser": "admin",
+      "caAdminPassword": "adminpw",
+      "operationsPort": 17051,
+      "roles": [
+        { "name": "gateway1",    "type": "gateway",    "secret": "gatewaypw",    "attrs": "role=gateway:ecert" },
+        { "name": "safetyofficer1", "type": "supervisor", "secret": "safetyofficerpw", "attrs": "role=supervisor:ecert" }
+      ]
+    },
+    {
+      "id":        "TGDGMSMSP",
+      "name":      "TGDGMS",
+      "type":      "government",
+      "domain":    "tg-dgms.gov.in",
+      "host":      "10.0.1.3",
+      "peerPort":  9051,
+      "gossipPort": 9052,
+      "chaincodePort": 9052,
+      "caPort":    8054,
+      "caAdminUser": "admin",
+      "caAdminPassword": "adminpw",
+      "operationsPort": 19051,
+      "roles": [
+        { "name": "inspector1",  "type": "auditor",  "secret": "inspectorpw",  "attrs": "role=auditor:ecert" }
+      ]
+    },
+    {
+      "id":        "TGLabourDeptMSP",
+      "name":      "TGLabourDept",
+      "type":      "government",
+      "domain":    "tg-labour.gov.in",
+      "host":      "10.0.1.4",
+      "peerPort":  10051,
+      "gossipPort": 10052,
+      "chaincodePort": 10052,
+      "caPort":    10054,
+      "caAdminUser": "admin",
+      "caAdminPassword": "adminpw",
+      "operationsPort": 20051,
+      "roles": [
+        { "name": "labourinspector1", "type": "auditor", "secret": "labourpw", "attrs": "role=auditor:ecert" }
+      ]
+    }
+  ],
+
+  "chaincode": {
+    "name":     "minesafetycc",
+    "version":  "1.0",
+    "sequence": 1,
+    "lang":     "node",
+    "path":     "../safety-chaincode",
+    "endorsementPolicy": "MAJORITY",
+    "eventTypes": [
+      { "name": "FALL",       "trigger": "digital_in_3=2", "riskScore": 85 },
+      { "name": "INACTIVITY", "trigger": "digital_in_3=3", "riskScore": 70 },
+      { "name": "SOS",        "trigger": "digital_in_3=4", "riskScore": 95 },
+      { "name": "GAS_ALERT",  "trigger": "digital_in_6=1", "riskScore": 98 }
+    ],
+    "accessRules": {
+      "LogIncident":          ["gateway"],
+      "UpdateIncidentStatus": ["supervisor"],
+      "GetIncident":          ["any"],
+      "GetAllIncidents":      ["supervisor", "auditor"],
+      "GetIncidentHistory":   ["supervisor", "auditor"]
+    },
+    "escalation": { "enabled": true, "unacknowledgedMinutes": 3, "notifyRoles": ["supervisor"] },
+    "compliance": { "notificationWindowHours": 1, "applicableLaw": "Mines Act 1952 Annexure-I" }
+  },
+
+  "offChain": { "type": "postgres", "connectionString": "postgresql://user:pass@localhost:5432/minesafety" },
+  "dashboard": { "backendPort": 3001, "frontendPort": 5173, "frontendUrl": "http://10.0.1.2:5173" }
+}

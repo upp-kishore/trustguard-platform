@@ -1,0 +1,10 @@
+# Generated output — regenerate with: node generateConfigs.js
+generated/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

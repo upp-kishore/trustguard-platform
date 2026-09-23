@@ -1,0 +1,123 @@
+{
+  "_comment": "TrustGuard IIoT — Network Configuration Schema v1.0",
+  "_description": "Single source of truth. Edit this file to deploy for any state/use-case. Run: node generateConfigs.js",
+
+  "network": {
+    "name": "AP Factory Safety Network",
+    "id":   "ap-factory-safety",
+    "channel": "iinot-safety-channel",
+    "domain": "iinot-safety.com",
+    "fabricVersion": "2.5.15",
+    "fabricCAVersion": "1.5.17",
+    "dockerNetworkName": "iinot_network",
+    "genesisProfile": "IINoTSafetyGenesis"
+  },
+
+  "orderer": {
+    "orgName":    "IINoTOrdererMSP",
+    "anchorName": "IINoTOrdererOrg",
+    "caName":     "ca-iinot-orderer",
+    "caFolderName": "iinot-orderer",
+    "domain":     "iinot-safety.com",
+    "host":       "localhost",
+    "port":       7050,
+    "adminPort":  7053,
+    "caPort":     9054,
+    "consensus":  "etcdraft",
+    "batchTimeout": "2s",
+    "maxMessageCount": 10,
+    "absoluteMaxBytes": "99 MB",
+    "preferredMaxBytes": "512 KB",
+    "nodeCount":  1,
+    "_note_nodeCount": "Set to 3 for production Raft (tolerates 1 failure). 1 = PoC/dev only."
+  },
+
+  "organizations": [
+    {
+      "id":           "IINoTIndustryMSP",
+      "name":         "IINoTIndustry",
+      "type":         "employer",
+      "domain":       "iinot-industry.com",
+      "caName":       "ca-iinot-industry",
+      "caFolderName": "iinot-industry",
+      "host":         "localhost",
+      "peerPort":     7051,
+      "gossipPort":   7052,
+      "chaincodePort": 7052,
+      "caPort":       7054,
+      "caAdminUser":  "admin",
+      "caAdminPassword": "adminpw",
+      "operationsPort": 17051,
+      "roles": [
+        { "name": "gateway1",    "type": "gateway",    "secret": "gatewaypw",    "attrs": "role=gateway:ecert" },
+        { "name": "supervisor1", "type": "supervisor", "secret": "supervisorpw", "attrs": "role=supervisor:ecert" }
+      ]
+    },
+    {
+      "id":           "IINoTRegulatorMSP",
+      "name":         "IINoTRegulator",
+      "type":         "government",
+      "domain":       "iinot-regulator.com",
+      "caName":       "ca-iinot-regulator",
+      "caFolderName": "iinot-regulator",
+      "host":         "localhost",
+      "peerPort":     9051,
+      "gossipPort":   9052,
+      "chaincodePort": 9052,
+      "caPort":       8054,
+      "caAdminUser":  "admin",
+      "caAdminPassword": "adminpw",
+      "operationsPort": 19051,
+      "roles": [
+        { "name": "auditor1", "type": "auditor", "secret": "auditorpw", "attrs": "role=auditor:ecert" }
+      ]
+    }
+  ],
+
+  "chaincode": {
+    "name":     "safetycc",
+    "version":  "1.0",
+    "sequence": 1,
+    "lang":     "node",
+    "path":     "../safety-chaincode",
+    "endorsementPolicy": "MAJORITY",
+
+    "eventTypes": [
+      { "name": "FALL",       "trigger": "digital_in_3=2", "riskScore": 85 },
+      { "name": "INACTIVITY", "trigger": "digital_in_3=3", "riskScore": 70 },
+      { "name": "SOS",        "trigger": "digital_in_3=4", "riskScore": 95 }
+    ],
+
+    "accessRules": {
+      "LogIncident":           ["gateway"],
+      "UpdateIncidentStatus":  ["supervisor"],
+      "GetIncident":           ["any"],
+      "GetAllIncidents":       ["supervisor", "auditor", "claims-reviewer"],
+      "GetIncidentHistory":    ["supervisor", "auditor"]
+    },
+
+    "escalation": {
+      "enabled": true,
+      "unacknowledgedMinutes": 5,
+      "notifyRoles": ["supervisor"]
+    },
+
+    "compliance": {
+      "notificationWindowHours": 4,
+      "applicableLaw": "Factories Act Section 88",
+      "autoGenerateForm": "Form18"
+    }
+  },
+
+  "offChain": {
+    "type":     "sqlite",
+    "path":     "./offchain.db",
+    "_note":    "Change type to 'postgres' for production; add connectionString field"
+  },
+
+  "dashboard": {
+    "backendPort":  3001,
+    "frontendPort": 5173,
+    "frontendUrl":  "http://localhost:5173"
+  }
+}
