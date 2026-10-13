@@ -536,7 +536,7 @@ function genChaincode() {
 
   // Generate event type constants
   const eventTypeConst = cc.eventTypes
-    .map(e => `    static ${e.name.toUpperCase()}_RISK = ${e.riskScore};`)
+    .map(e => { const ev = typeof e === "string" ? {name: e, riskScore: 5} : e; return `    static ${ev.name.toUpperCase()}_RISK = ${ev.riskScore};`; })
     .join('\n');
 
   const js = `'use strict';
